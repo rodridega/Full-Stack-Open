@@ -1,4 +1,5 @@
 import React from "react";
+import { addNumber, updateNumber } from "../services/services";
 
 export const PersonForm = ({
   newName,
@@ -7,6 +8,7 @@ export const PersonForm = ({
   setNewNumber,
   persons,
   setPersons,
+  setMessage,
 }) => {
   const handleNewName = (e) => {
     setNewName(e.target.value);
@@ -15,24 +17,58 @@ export const PersonForm = ({
     setNewNumber(e.target.value);
   };
 
-  const handleNew = (e) => {
+  const handleNew = async (e) => {
     e.preventDefault();
+
+    const newEntry = {
+      name: newName,
+      number: newNumber,
+    };
 
     if (
       persons.find(
         (person) => person.name.toLowerCase() === newName.toLowerCase()
       )
     ) {
-      return alert(`${newName} ya esta en la agenda`);
+      const newPerson = persons.find(
+        (person) => person.name.toLowerCase() === newName.toLowerCase()
+      );
+      if (
+        window.confirm(
+          `${newName} ya esta en la agenda, desea reemplazar el nuevo numero?`
+        )
+      ) {
+        const numberToUpdate = await updateNumber(newPerson.id, newEntry);
+        setPersons(
+          persons.map((person) =>
+            person.id === newPerson.id ? numberToUpdate : person
+          )
+        );
+        setNewName("");
+        setNewNumber("");
+        setMessage(`${newName} Actualizado`);
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
+      }
+      return;
     }
 
-    const newEntry = {
-      name: newName,
-      number: newNumber,
-    };
-    setPersons(persons.concat(newEntry));
-    setNewName("");
+    await addNumber(newEntry)
+      .then((newNote) => {
+        setPersons(persons.concat(newNote));
+        setNewName("");
+        setNewNumber("");
+        setMessage(`${newName} Agregado a la agenda`);
+        setTimeout(() => {
+          setMessage(null);
+        }, 5000);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
+
   return (
     <form onSubmit={handleNew}>
       <h2>Add new</h2>
